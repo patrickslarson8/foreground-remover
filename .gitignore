@@ -127,6 +127,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+fg-remover/
 
 # Spyder project settings
 .spyderproject
