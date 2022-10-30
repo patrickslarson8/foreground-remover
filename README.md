@@ -2,6 +2,7 @@
 
 - [Foreground Remover](#foreground-remover)
   - [Overview](#overview)
+    - [Referenced Code](#referenced-code)
     - [TODO](#todo)
 
 ## Overview
@@ -10,8 +11,13 @@ This is an implementation of Mediapipe that reverses the background mask to make
 
 This project was created as a halloween virtual costume, to make someone appear as a ghost in a Teams/Zoom type meeting.
 
+### Referenced Code
+
+This project borrows heavily from the following code snippets:
+
+- https://google.github.io/mediapipe/solutions/selfie_segmentation.html
+- https://realpython.com/pysimplegui-python/
+
 ### TODO
 
-1. Tie in mediapipe mask to preview embedded in window
-2. Provide appropriate references to code used
-3. Create virtual camera output for piping into other programs
+1. Create virtual camera output for piping into other programs
