@@ -1,4 +1,6 @@
 import os
+import math
+from random import Random
 import PySimpleGUI as sg
 from PIL import Image
 import cv2
@@ -32,11 +34,7 @@ file_list_column = [
             values=[], enable_events=True, size=(40, 15), key="-FOREGROUND LIST-"
         )
     ],
-]
-
-preview_column = [
-    [sg.Image(filename="", key="-IMAGE-")],
-    #[sg.Radio("None", "Radio", True, size=(10, 1))],
+        #[sg.Radio("None", "Radio", True, size=(10, 1))],
     [
         #sg.Radio("blur", "Radio", size=(10, 1), key="-BLUR-"),
         sg.Slider(
@@ -82,12 +80,18 @@ preview_column = [
         ),
     ],
     [sg.Button("Exit", size=(10, 1))],
+    [sg.Button("Ghostly", size=(10, 1))],
+]
+
+preview_column = [
+    [sg.Image(filename="", key="-IMAGE-")],
 ]
 
 def main():
     bg_image = None
     fg_image = None
     is_bg_remove = True
+    ghost_cycle = False
     threshold = 0.1
     
     sg.theme("LightGreen")
@@ -117,6 +121,8 @@ def main():
                 if event == "Exit" or event == sg.WIN_CLOSED:
                     break
                 
+                elif event == "Ghostly":
+                    ghost_cycle = not ghost_cycle
                 elif event == "-BG FOLDER-":
                     folder = values["-BG FOLDER-"]
                     try:
@@ -205,16 +211,18 @@ def main():
                     mat = np.zeros(image.shape, dtype=np.uint8)
                     mat[:] = BG_COLOR
                     
-                #if values["-BLUR-"]:
                 mat = cv2.GaussianBlur(mat, (21, 21), values["-BLUR SLIDER-"])
-                #elif values["-HUE-"]:
                 mat = cv2.cvtColor(mat, cv2.COLOR_BGR2HSV)
                 mat[:, :, 0] += int(values["-HUE SLIDER-"])
                 mat = cv2.cvtColor(mat, cv2.COLOR_HSV2BGR)
-                #elif values["-TRANSPARENCY-"]:
-                amt_transparent = float(values["-TRANSPARENCY SLIDER-"]/100)
-                amt_opaque = 1 - amt_transparent
-                #elif values["-THRESHOLD-"]:
+                
+                if (not ghost_cycle):
+                    amt_transparent = float(values["-TRANSPARENCY SLIDER-"]/100)
+                else:
+                    amt_transparent = Random.random(0.1, 0.7, 0.05)
+                
+                
+                
                 threshold = float(values["-THRESHOLD SLIDER-"]/100)
                 
                 # Process the transparency effect
