@@ -3,7 +3,8 @@
 - [Foreground Remover](#foreground-remover)
   - [Overview](#overview)
     - [Referenced Code](#referenced-code)
-    - [TODO](#todo)
+    - [Installation](#installation)
+    - [Usage](#usage)
 
 ## Overview
 
@@ -18,5 +19,15 @@ This project borrows heavily from the following code snippets:
 - https://google.github.io/mediapipe/solutions/selfie_segmentation.html
 - https://realpython.com/pysimplegui-python/
 
-### TODO
+### Installation
 
+```BASH
+git clone https://github.com/patrickslarson8/foreground-remover
+pip3 install -r requirements.txt
+```
+
+### Usage
+
+```BASH
+python3 fg-remover.py
+```

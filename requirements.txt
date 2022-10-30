@@ -1,0 +1,6 @@
+pysimplegui
+pillow
+opencv-contrib-python
+numpy
+pyvirtualcam
+mediapipe
