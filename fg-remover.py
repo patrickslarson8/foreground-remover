@@ -1,5 +1,4 @@
 import os
-import math
 from random import uniform
 import PySimpleGUI as sg
 from PIL import Image
