@@ -12,22 +12,30 @@ BG_COLOR = (192, 192, 192)
 ## Layout columns
 file_list_column = [
     [
-        sg.Text("Image Folder"),
+        sg.Text("Background Image Folder"),
         sg.In(size=(25, 1), enable_events=True, key="-FOLDER-"),
         sg.FolderBrowse(),
     ],
     [
         sg.Listbox(
-            values=[], enable_events=True, size=(40, 20), key="-FILE LIST-"
+            values=[], enable_events=True, size=(40, 15), key="-BACKGROUND LIST-"
+        )
+    ],
+    [
+        sg.Text("Foreground Image Folder"),
+        sg.In(size=(25, 1), enable_events=True, key="-FOLDER-"),
+        sg.FolderBrowse(),
+    ],
+    [
+        sg.Listbox(
+            values=[], enable_events=True, size=(40, 15), key="-FOREGROUND LIST-"
         )
     ],
 ]
 
 preview_column = [
-    [sg.Text("Foreground Remover", size=(60, 1), justification="center")],
     [sg.Image(filename="", key="-IMAGE-")],
     [sg.Radio("None", "Radio", True, size=(10, 1))],
-
     [
         sg.Radio("blur", "Radio", size=(10, 1), key="-BLUR-"),
         sg.Slider(
@@ -53,49 +61,6 @@ preview_column = [
     [sg.Button("Exit", size=(10, 1))],
 ]
 
-# cap = cv2.VideoCapture(0)
-
-# with mp_selfie_segmentation.SelfieSegmentation(
-#     model_selection=1) as selfie_segmentation:
-#   bg_image = None
-#   while cap.isOpened():
-#     success, image = cap.read()
-#     if not success:
-#       print("Ignoring empty camera frame.")
-#       # If loading a video, use 'break' instead of 'continue'.
-#       continue
-
-#     # Flip the image horizontally for a later selfie-view display, and convert
-#     # the BGR image to RGB.
-#     image = cv2.cvtColor(cv2.flip(image, 1), cv2.COLOR_BGR2RGB)
-#     # To improve performance, optionally mark the image as not writeable to
-#     # pass by reference.
-#     image.flags.writeable = False
-#     results = selfie_segmentation.process(image)
-
-#     image.flags.writeable = True
-#     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-
-#     # Draw selfie segmentation on the background image.
-#     # To improve segmentation around boundaries, consider applying a joint
-#     # bilateral filter to "results.segmentation_mask" with "image".
-#     condition = np.stack(
-#       (results.segmentation_mask,) * 3, axis=-1) > 0.1
-#     # The background can be customized.
-#     #   a) Load an image (with the same width and height of the input image) to
-#     #      be the background, e.g., bg_image = cv2.imread('/path/to/image/file')
-#     #   b) Blur the input image by applying image filtering, e.g.,
-#     #      bg_image = cv2.GaussianBlur(image,(55,55),0)
-#     if bg_image is None:
-#       bg_image = np.zeros(image.shape, dtype=np.uint8)
-#       bg_image[:] = BG_COLOR
-#     output_image = np.where(condition, image, bg_image)
-
-#     cv2.imshow('MediaPipe Selfie Segmentation', output_image)
-#     if cv2.waitKey(5) & 0xFF == 27:
-#       break
-# cap.release()
-
 def main():
     sg.theme("LightGreen")
     layout = [
@@ -112,8 +77,8 @@ def main():
     with mp_selfie_segmentation.SelfieSegmentation(
      model_selection=1) as selfie_segmentation:
         cap = cv2.VideoCapture(0)
-        width  = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
-        height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         bg_image = None
         
         while True:
@@ -135,17 +100,17 @@ def main():
                     if os.path.isfile(os.path.join(folder, f))
                     and f.lower().endswith((".png", ".gif"))
                 ]
-                window["-FILE LIST-"].update(fnames)
+                window["-BACKGROUND LIST-"].update(fnames)
                 
-            elif event == "-FILE LIST-":  # A file was chosen from the listbox
+            elif event == "-BACKGROUND LIST-":  # A file was chosen from the listbox
                 try:
                     filename = os.path.join(
-                        values["-FOLDER-"], values["-FILE LIST-"][0]
+                        values["-FOLDER-"], values["-BACKGROUND LIST-"][0]
                     )
                     # TODO:store image in memory
                     print(filename)
                     bg_image = cv2.imread(filename)
-                    bg_image = cv2.resize(bg_image, )
+                    bg_image = cv2.resize(bg_image, [width, height], interpolation = cv2.INTER_AREA)
                     
                 
                 #window["-IMAGE-"].update(filename=filename)
