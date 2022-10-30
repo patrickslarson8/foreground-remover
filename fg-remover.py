@@ -1,6 +1,6 @@
 import os
 import math
-from random import Random
+from random import uniform
 import PySimpleGUI as sg
 from PIL import Image
 import cv2
@@ -93,6 +93,8 @@ def main():
     is_bg_remove = True
     ghost_cycle = False
     threshold = 0.1
+    amt_opaque = 1
+    amt_transparent = 0
     
     sg.theme("LightGreen")
     layout = [
@@ -205,8 +207,7 @@ def main():
                     mat = fg_image
 
                 # Apply effects
-                amt_opaque = 1
-                amt_transparent = 0
+                
                 if mat is None:
                     mat = np.zeros(image.shape, dtype=np.uint8)
                     mat[:] = BG_COLOR
@@ -219,10 +220,14 @@ def main():
                 if (not ghost_cycle):
                     amt_transparent = float(values["-TRANSPARENCY SLIDER-"]/100)
                 else:
-                    amt_transparent = Random.random(0.1, 0.7, 0.05)
-                
-                
-                
+                    if amt_transparent < 0.05:
+                        amt_transparent += 0.05
+                    elif amt_transparent > 0.5:
+                        amt_transparent -= 0.05
+                    else:
+                        amt_transparent += uniform(-0.05, 0.05)
+                            
+                amt_opaque = 1 - amt_transparent
                 threshold = float(values["-THRESHOLD SLIDER-"]/100)
                 
                 # Process the transparency effect
