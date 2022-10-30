@@ -13,7 +13,7 @@ BG_COLOR = (192, 192, 192)
 file_list_column = [
     [
         sg.Text("Background Image Folder"),
-        sg.In(size=(25, 1), enable_events=True, key="-FOLDER-"),
+        sg.In(size=(25, 1), enable_events=True, key="-BG FOLDER-"),
         sg.FolderBrowse(),
     ],
     [
@@ -23,7 +23,7 @@ file_list_column = [
     ],
     [
         sg.Text("Foreground Image Folder"),
-        sg.In(size=(25, 1), enable_events=True, key="-FOLDER-"),
+        sg.In(size=(25, 1), enable_events=True, key="-FG FOLDER-"),
         sg.FolderBrowse(),
     ],
     [
@@ -80,14 +80,16 @@ def main():
         width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         bg_image = None
+        fg_image = None
+        is_bg_remove = True
         
         while True:
             event, values = window.read(timeout=20)
             if event == "Exit" or event == sg.WIN_CLOSED:
                 break
             
-            elif event == "-FOLDER-":
-                folder = values["-FOLDER-"]
+            elif event == "-BG FOLDER-":
+                folder = values["-BG FOLDER-"]
                 try:
                     # Get list of files in folder
                     file_list = os.listdir(folder)
@@ -102,27 +104,49 @@ def main():
                 ]
                 window["-BACKGROUND LIST-"].update(fnames)
                 
+            elif event == "-FG FOLDER-":
+                folder = values["-FG FOLDER-"]
+                try:
+                    # Get list of files in folder
+                    file_list = os.listdir(folder)
+                except:
+                    file_list = []
+
+                fnames = [
+                    f
+                    for f in file_list
+                    if os.path.isfile(os.path.join(folder, f))
+                    and f.lower().endswith((".png", ".gif"))
+                ]
+                window["-FOREGROUND LIST-"].update(fnames)
+                
             elif event == "-BACKGROUND LIST-":  # A file was chosen from the listbox
+                is_bg_remove = True
                 try:
                     filename = os.path.join(
-                        values["-FOLDER-"], values["-BACKGROUND LIST-"][0]
+                        values["-BG FOLDER-"], values["-BACKGROUND LIST-"][0]
                     )
-                    # TODO:store image in memory
-                    print(filename)
                     bg_image = cv2.imread(filename)
                     bg_image = cv2.resize(bg_image, [width, height], interpolation = cv2.INTER_AREA)
-                    
-                
-                #window["-IMAGE-"].update(filename=filename)
-
                 except:
                     bg_image = None
+                    pass
+            
+            elif event == "-FOREGROUND LIST-":  # A file was chosen from the listbox
+                is_bg_remove = False
+                try:
+                    filename = os.path.join(
+                        values["-FG FOLDER-"], values["-FOREGROUND LIST-"][0]
+                    )
+                    fg_image = cv2.imread(filename)
+                    fg_image = cv2.resize(fg_image, [width, height], interpolation = cv2.INTER_AREA)
+                except:
+                    fg_image = None
                     pass
           
             success, image = cap.read()
             if not success:
                 print("Ignoring empty camera frame.")
-            # If loading a video, use 'break' instead of 'continue'.
                 continue
 
             # Flip the image horizontally for a later selfie-view display, and convert
@@ -139,24 +163,25 @@ def main():
             # Draw selfie segmentation on the background image.
             # To improve segmentation around boundaries, consider applying a joint
             # bilateral filter to "results.segmentation_mask" with "image".
-            condition = np.stack(
-                (results.segmentation_mask,) * 3, axis=-1) > 0.1
-            # The background can be customized.
-            #   a) Load an image (with the same width and height of the input image) to
-            #      be the background, e.g., bg_image = cv2.imread('/path/to/image/file')
+            if is_bg_remove:
+                condition = np.stack((results.segmentation_mask,) * 3, axis=-1) > 0.1
+                mat = bg_image
+            else:
+                condition = np.stack((results.segmentation_mask,) * 3, axis=-1) < 0.1
+                mat = fg_image
 
-            if bg_image is None:
-                bg_image = np.zeros(image.shape, dtype=np.uint8)
-                bg_image[:] = BG_COLOR
+            if mat is None:
+                mat = np.zeros(image.shape, dtype=np.uint8)
+                mat[:] = BG_COLOR
                 
             if values["-BLUR-"]:
-                bg_image = cv2.GaussianBlur(bg_image, (21, 21), values["-BLUR SLIDER-"])
+                mat = cv2.GaussianBlur(mat, (21, 21), values["-BLUR SLIDER-"])
             elif values["-HUE-"]:
-                bg_image = cv2.cvtColor(bg_image, cv2.COLOR_BGR2HSV)
-                bg_image[:, :, 0] += int(values["-HUE SLIDER-"])
-                bg_image = cv2.cvtColor(bg_image, cv2.COLOR_HSV2BGR)
+                mat = cv2.cvtColor(mat, cv2.COLOR_BGR2HSV)
+                mat[:, :, 0] += int(values["-HUE SLIDER-"])
+                mat = cv2.cvtColor(mat, cv2.COLOR_HSV2BGR)
             
-            frame = np.where(condition, image, bg_image)
+            frame = np.where(condition, image, mat)
                 
             imgbytes = cv2.imencode(".png", frame)[1].tobytes()
             window["-IMAGE-"].update(data=imgbytes)
