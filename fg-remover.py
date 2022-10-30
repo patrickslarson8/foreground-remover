@@ -77,6 +77,8 @@ def main():
     
     with mp_selfie_segmentation.SelfieSegmentation(model_selection=1) as selfie_segmentation:
         cap = cv2.VideoCapture(0)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         bg_image = None
