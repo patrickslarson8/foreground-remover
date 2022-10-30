@@ -20,4 +20,3 @@ This project borrows heavily from the following code snippets:
 
 ### TODO
 
-1. Create virtual camera output for piping into other programs

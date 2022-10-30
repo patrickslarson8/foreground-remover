@@ -36,9 +36,9 @@ file_list_column = [
 
 preview_column = [
     [sg.Image(filename="", key="-IMAGE-")],
-    [sg.Radio("None", "Radio", True, size=(10, 1))],
+    #[sg.Radio("None", "Radio", True, size=(10, 1))],
     [
-        sg.Radio("blur", "Radio", size=(10, 1), key="-BLUR-"),
+        #sg.Radio("blur", "Radio", size=(10, 1), key="-BLUR-"),
         sg.Slider(
             (1, 11),
             1,
@@ -49,7 +49,7 @@ preview_column = [
         ),
     ],
     [
-        sg.Radio("hue", "Radio", size=(10, 1), key="-HUE-"),
+        #sg.Radio("hue", "Radio", size=(10, 1), key="-HUE-"),
         sg.Slider(
             (0, 225),
             0,
@@ -59,10 +59,37 @@ preview_column = [
             key="-HUE SLIDER-",
         ),
     ],
+    [
+        #sg.Radio("transparency", "Radio", size=(10, 1), key="-TRANSPARENCY-"),
+        sg.Slider(
+            (0, 100),
+            100,
+            1,
+            orientation="h",
+            size=(40, 15),
+            key="-TRANSPARENCY SLIDER-",
+        ),
+    ],
+    [
+        #sg.Radio("threshold", "Radio", size=(10, 1), key="-THRESHOLD-"),
+        sg.Slider(
+            (0, 100),
+            0,
+            1,
+            orientation="h",
+            size=(40, 15),
+            key="-THRESHOLD SLIDER-",
+        ),
+    ],
     [sg.Button("Exit", size=(10, 1))],
 ]
 
 def main():
+    bg_image = None
+    fg_image = None
+    is_bg_remove = True
+    threshold = 0.1
+    
     sg.theme("LightGreen")
     layout = [
         [
@@ -81,9 +108,7 @@ def main():
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        bg_image = None
-        fg_image = None
-        is_bg_remove = True
+        
         
         with pyvirtualcam.Camera(width=width, height=height, fps=20) as cam:
         
@@ -160,7 +185,6 @@ def main():
                 # pass by reference.
                 image.flags.writeable = False
                 results = selfie_segmentation.process(image)
-
                 image.flags.writeable = True
                 image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
@@ -168,28 +192,45 @@ def main():
                 # To improve segmentation around boundaries, consider applying a joint
                 # bilateral filter to "results.segmentation_mask" with "image".
                 if is_bg_remove:
-                    condition = np.stack((results.segmentation_mask,) * 3, axis=-1) > 0.1
+                    condition = np.stack((results.segmentation_mask,) * 3, axis=-1) > threshold
                     mat = bg_image
                 else:
-                    condition = np.stack((results.segmentation_mask,) * 3, axis=-1) < 0.1
+                    condition = np.stack((results.segmentation_mask,) * 3, axis=-1) < threshold
                     mat = fg_image
 
+                # Apply effects
+                amt_opaque = 1
+                amt_transparent = 0
                 if mat is None:
                     mat = np.zeros(image.shape, dtype=np.uint8)
                     mat[:] = BG_COLOR
                     
-                if values["-BLUR-"]:
-                    mat = cv2.GaussianBlur(mat, (21, 21), values["-BLUR SLIDER-"])
-                elif values["-HUE-"]:
-                    mat = cv2.cvtColor(mat, cv2.COLOR_BGR2HSV)
-                    mat[:, :, 0] += int(values["-HUE SLIDER-"])
-                    mat = cv2.cvtColor(mat, cv2.COLOR_HSV2BGR)
+                #if values["-BLUR-"]:
+                mat = cv2.GaussianBlur(mat, (21, 21), values["-BLUR SLIDER-"])
+                #elif values["-HUE-"]:
+                mat = cv2.cvtColor(mat, cv2.COLOR_BGR2HSV)
+                mat[:, :, 0] += int(values["-HUE SLIDER-"])
+                mat = cv2.cvtColor(mat, cv2.COLOR_HSV2BGR)
+                #elif values["-TRANSPARENCY-"]:
+                amt_transparent = float(values["-TRANSPARENCY SLIDER-"]/100)
+                amt_opaque = 1 - amt_transparent
+                #elif values["-THRESHOLD-"]:
+                threshold = float(values["-THRESHOLD SLIDER-"]/100)
+                
+                # Process the transparency effect
+                mat_additive = mat * amt_opaque
+                image = image * amt_transparent
+                image = image + mat_additive
+                image = image.astype(np.uint8)
+                    
                 
                 frame = np.where(condition, image, mat)
                 
+                # Update virtual cam
                 cam.send(frame)
                 cam.sleep_until_next_frame()
-                    
+                
+                # Update preview
                 imgbytes = cv2.imencode(".png", frame)[1].tobytes()
                 window["-IMAGE-"].update(data=imgbytes)
                 
