@@ -26,6 +26,8 @@ git clone https://github.com/patrickslarson8/foreground-remover
 pip3 install -r requirements.txt
 ```
 
+To also use the output in another app like teams, you must install OBS Studio because this leverages the OBS virtual camera output.
+
 ### Usage
 
 ```BASH
